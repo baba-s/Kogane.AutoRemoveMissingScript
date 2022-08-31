@@ -1,6 +1,4 @@
-using System;
-using System.Linq;
-using System.Reflection;
+﻿using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -25,28 +23,32 @@ namespace Kogane.Internal
             // シーンが保存された時に呼び出されます
             EditorSceneManager.sceneSaving += ( scene, _ ) => Remove( scene.GetRootGameObjects() );
 
-            // シーンが閉じられる時に呼び出されます
-            EditorSceneManager.sceneClosing += ( scene, _ ) =>
-            {
-                if ( !Remove( scene.GetRootGameObjects() ) ) return;
-                EditorSceneManager.SaveScene( scene );
-            };
+            // シーンの変更を破棄しようとした時に勝手に保存されてしまうため
+            // シーンが閉じられる時は無視しています
+            // // シーンが閉じられる時に呼び出されます
+            // EditorSceneManager.sceneClosing += ( scene, _ ) =>
+            // {
+            //     if ( !Remove( scene.GetRootGameObjects() ) ) return;
+            //     EditorSceneManager.SaveScene( scene );
+            // };
 
             // プレハブのシーンが保存された時に呼び出されます
             PrefabStage.prefabSaving += gameObject => Remove( gameObject );
 
-            // プレハブステージが閉じられる時に呼び出されます
-            PrefabStage.prefabStageClosing += stage =>
-            {
-                if ( !Remove( stage.prefabContentsRoot ) ) return;
-
-                var prefabStageType = typeof( PrefabStage );
-                var saveMethod      = prefabStageType.GetMethod( "Save", BindingFlags.Instance | BindingFlags.NonPublic );
-
-                Debug.Assert( saveMethod != null, nameof( saveMethod ) + " != null" );
-
-                saveMethod.Invoke( stage, Array.Empty<object>() );
-            };
+            // プレハブステージの変更を破棄しようとした時に勝手に保存されてしまうため
+            // プレハブステージが閉じられる時は無視しています
+            // // プレハブステージが閉じられる時に呼び出されます
+            // PrefabStage.prefabStageClosing += stage =>
+            // {
+            //     if ( !Remove( stage.prefabContentsRoot ) ) return;
+            //
+            //     var prefabStageType = typeof( PrefabStage );
+            //     var saveMethod      = prefabStageType.GetMethod( "Save", BindingFlags.Instance | BindingFlags.NonPublic );
+            //
+            //     Debug.Assert( saveMethod != null, nameof( saveMethod ) + " != null" );
+            //
+            //     saveMethod.Invoke( stage, Array.Empty<object>() );
+            // };
 
             // Unity の再生状態が変更された時に呼び出されます
             EditorApplication.playModeStateChanged += change =>
@@ -62,6 +64,8 @@ namespace Kogane.Internal
         private static bool Remove( params GameObject[] rootGameObjects )
         {
             var gameObjectArray = rootGameObjects
+                    .SelectMany( x => x.GetComponentsInChildren<Transform>( true ) )
+                    .Select( x => x.gameObject )
                     .Where( x => 0 < GameObjectUtility.GetMonoBehavioursWithMissingScriptCount( x ) )
                     .ToArray()
                 ;
