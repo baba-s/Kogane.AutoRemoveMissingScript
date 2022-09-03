@@ -38,8 +38,14 @@ namespace Kogane.Internal
         /// </summary>
         static AutoRemoveMissingScript()
         {
+            // シーンが開かれた時に呼び出されます
+            EditorSceneManager.sceneOpened += ( scene, _ ) => Remove( scene.GetRootGameObjects() );
+
             // シーンが保存された時に呼び出されます
             EditorSceneManager.sceneSaving += ( scene, _ ) => Remove( scene.GetRootGameObjects() );
+
+            // プレハブのシーンが開かれた時に呼び出されます
+            PrefabStage.prefabStageOpened += prefabStage => Remove( prefabStage.prefabContentsRoot );
 
             // プレハブのシーンが保存された時に呼び出されます
             PrefabStage.prefabSaving += gameObject => Remove( gameObject );
